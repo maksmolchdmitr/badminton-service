@@ -45,7 +45,7 @@ val openApiOutputDir = "$projectDir/generated/openapi"
 
 openApiGenerate {
 	generatorName.set("spring")
-	inputSpec.set("$projectDir/src/main/resources/static/openapi.yaml")
+	inputSpec.set("$projectDir/src/main/resources/openapi/api.yaml")
 	outputDir.set(openApiOutputDir)
 	apiPackage.set("maks.molch.dmitr.badminton_service.generated.api")
 	modelPackage.set("maks.molch.dmitr.badminton_service.generated.model")
