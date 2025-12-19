@@ -36,10 +36,10 @@ jobs:
           gradle-home-cache-cleanup: true
 
       - name: Execute Gradle build
-        run: ./gradlew build --no-daemon --stacktrace
+        run: ./gradlew build
 
       - name: Run tests
-        run: ./gradlew test --no-daemon --tests "*Test"
+        run: ./gradlew check
 
       - name: Upload test results
         if: always()
