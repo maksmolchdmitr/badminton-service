@@ -1,0 +1,65 @@
+name: Java CI with Gradle
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    services:
+      # Optional: Add services like PostgreSQL if needed
+      # postgres:
+      #   image: postgres:latest
+      #   env:
+      #     POSTGRES_USER: test
+      #     POSTGRES_PASSWORD: test
+      #     POSTGRES_DB: testdb
+      #   ports:
+      #     - 5432:5432
+      #   options: >-
+      #     --health-cmd pg_isready
+      #     --health-interval 10s
+      #     --health-timeout 5s
+      #     --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Generate OpenAPI code
+        run: ./gradlew openApiGenerate
+
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon --stacktrace
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/test-results/test/
+          retention-days: 7
+
+      - name: Upload build reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: build/reports/
+          retention-days: 7
