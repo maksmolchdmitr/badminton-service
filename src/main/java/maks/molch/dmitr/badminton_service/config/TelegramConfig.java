@@ -1,4 +1,4 @@
-package maks.molch.dmitr.badminton_service.telegram.config;
+package maks.molch.dmitr.badminton_service.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

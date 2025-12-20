@@ -1,4 +1,4 @@
-package maks.molch.dmitr.badminton_service.common;
+package maks.molch.dmitr.badminton_service.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
