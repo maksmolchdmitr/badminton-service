@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import maks.molch.dmitr.badminton_service.generated.api.TelegramAuthApiDelegate;
 import maks.molch.dmitr.badminton_service.generated.model.TelegramAuthData;
 import maks.molch.dmitr.badminton_service.generated.model.TelegramUser;
+import maks.molch.dmitr.badminton_service.telegram.model.TelegramUserModel;
 import maks.molch.dmitr.badminton_service.telegram.service.TelegramAuthService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -25,7 +26,7 @@ public class TelegramAuthApiDelegateImpl implements TelegramAuthApiDelegate {
     @Override
     public ResponseEntity<TelegramUser> telegramLogin(TelegramAuthData telegramAuthData) {
         Map<String, String> authData = toAuthDataMap(telegramAuthData);
-        maks.molch.dmitr.badminton_service.telegram.model.TelegramUser user = telegramAuthService.checkTelegramAuthorization(authData);
+        TelegramUserModel user = telegramAuthService.checkTelegramAuthorization(authData);
 
         ResponseCookie cookie = ResponseCookie.from(TG_USER_COOKIE, user.getId().toString())
                 .path("/")
@@ -99,7 +100,7 @@ public class TelegramAuthApiDelegateImpl implements TelegramAuthApiDelegate {
         return map;
     }
 
-    private static TelegramUser toGeneratedUser(maks.molch.dmitr.badminton_service.telegram.model.TelegramUser user) {
+    private static TelegramUser toGeneratedUser(TelegramUserModel user) {
         return new TelegramUser()
                 .id(user.getId())
                 .firstName(user.getFirstName())

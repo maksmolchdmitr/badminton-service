@@ -3,7 +3,7 @@ package maks.molch.dmitr.badminton_service.telegram.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import maks.molch.dmitr.badminton_service.telegram.config.TelegramConfig;
-import maks.molch.dmitr.badminton_service.telegram.model.TelegramUser;
+import maks.molch.dmitr.badminton_service.telegram.model.TelegramUserModel;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -13,7 +13,6 @@ import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -33,7 +32,7 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
      * {@inheritDoc}
      */
     @Override
-    public TelegramUser checkTelegramAuthorization(Map<String, String> authData) {
+    public TelegramUserModel checkTelegramAuthorization(Map<String, String> authData) {
         if (authData == null || authData.isEmpty()) {
             throw new IllegalArgumentException("Auth data is empty");
         }
@@ -84,7 +83,7 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
         return bytesToHex(signature);
     }
 
-    private TelegramUser createTelegramUser(Map<String, String> authData, String hash, long authDate) {
+    private TelegramUserModel createTelegramUser(Map<String, String> authData, String hash, long authDate) {
         String id = authData.get("id");
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("User id is missing");
@@ -97,7 +96,7 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
             throw new IllegalArgumentException("User id is invalid", e);
         }
 
-        return TelegramUser.builder()
+        return TelegramUserModel.builder()
                 .id(parsedId)
                 .firstName(authData.get("first_name"))
                 .lastName(authData.get("last_name"))

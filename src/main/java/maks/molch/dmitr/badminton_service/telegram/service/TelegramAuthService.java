@@ -1,10 +1,10 @@
 package maks.molch.dmitr.badminton_service.telegram.service;
 
-import maks.molch.dmitr.badminton_service.telegram.model.TelegramUser;
+import maks.molch.dmitr.badminton_service.telegram.model.TelegramUserModel;
 import java.util.Map;
 
 /**
- * Service for validating Telegram login widget authorization payload and constructing a {@link TelegramUser}.
+ * Service for validating Telegram login widget authorization payload and constructing a {@link TelegramUserModel}.
  */
 public interface TelegramAuthService {
 
@@ -15,5 +15,5 @@ public interface TelegramAuthService {
      * @return validated Telegram user
      * @throws SecurityException if validation fails
      */
-    TelegramUser checkTelegramAuthorization(Map<String, String> authData);
+    TelegramUserModel checkTelegramAuthorization(Map<String, String> authData);
 }

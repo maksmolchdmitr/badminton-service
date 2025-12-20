@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TelegramUser {
+public class TelegramUserModel {
     private Long id;
     
     @JsonProperty("first_name")
