@@ -23,7 +23,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TelegramUser'
+                $ref: '#/components/schemas/TokenResponse'
         '400':
           description: Bad request
           content:
@@ -60,6 +60,16 @@ components:
           type: integer
           format: int64
         hash:
+          type: string
+    TokenResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
           type: string
     ErrorResponse:
       type: object

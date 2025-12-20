@@ -1,4 +1,4 @@
-package maks.molch.dmitr.badminton_service.service;
+package maks.molch.dmitr.badminton_service.service.auth;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,16 +27,16 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
     private final TelegramConfig telegramConfig;
 
     @Override
-    public boolean checkTelegramUserData(TelegramUserModel telegramUserModel) {
-        if (telegramUserModel.getHash().isBlank()) {
+    public void checkTelegramUserData(TelegramUserModel telegramUserModel) {
+        if (telegramUserModel.hash().isBlank()) {
             throw new IllegalArgumentException("Hash is blank");
         }
 
-        if (telegramUserModel.getAuthDate().equals(0L)) {
+        if (telegramUserModel.authDate().equals(0L)) {
             throw new IllegalArgumentException("Auth date is 0");
         }
 
-        long ageSeconds = Instant.now().getEpochSecond() - telegramUserModel.getAuthDate();
+        long ageSeconds = Instant.now().getEpochSecond() - telegramUserModel.authDate();
         if (ageSeconds > MAX_AUTH_AGE_SECONDS) {
             throw new SecurityException("Data is outdated");
         }
@@ -44,21 +44,19 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
         String dataCheckString = buildDataCheckString(toMap(telegramUserModel));
         String calculatedHash = calculateTelegramHash(dataCheckString);
 
-        if (!calculatedHash.equalsIgnoreCase(telegramUserModel.getHash())) {
+        if (!calculatedHash.equalsIgnoreCase(telegramUserModel.hash())) {
             throw new SecurityException("Invalid hash");
         }
-
-        return true;
     }
 
     private Map<String, String> toMap(TelegramUserModel telegramUserModel) {
         return Map.of(
-                "id", telegramUserModel.getId().toString(),
-                "first_name", telegramUserModel.getFirstName(),
-                "last_name", telegramUserModel.getLastName(),
-                "username", telegramUserModel.getUsername(),
-                "photo_url", telegramUserModel.getPhotoUrl(),
-                "auth_date", telegramUserModel.getAuthDate().toString()
+                "id", telegramUserModel.id().toString(),
+                "first_name", telegramUserModel.firstName(),
+                "last_name", telegramUserModel.lastName(),
+                "username", telegramUserModel.username(),
+                "photo_url", telegramUserModel.photoUrl(),
+                "auth_date", telegramUserModel.authDate().toString()
         );
     }
 
