@@ -73,7 +73,7 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
     private String buildDataCheckString(Map<String, String> authData) {
         return authData.entrySet().stream()
                 .filter(entry -> !"hash".equals(entry.getKey()))
-                .sorted(Comparator.comparing(Map.Entry::getKey))
+                .sorted(Map.Entry.comparingByKey())
                 .map(entry -> entry.getKey() + "=" + entry.getValue())
                 .collect(Collectors.joining("\n"));
     }
