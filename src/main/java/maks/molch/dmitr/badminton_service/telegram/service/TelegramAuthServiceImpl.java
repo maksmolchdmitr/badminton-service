@@ -4,14 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import maks.molch.dmitr.badminton_service.telegram.config.TelegramConfig;
 import maks.molch.dmitr.badminton_service.telegram.model.TelegramUserModel;
+import maks.molch.dmitr.badminton_service.util.CryptoUtils;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,18 +19,16 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ParametersAreNonnullByDefault
 public class TelegramAuthServiceImpl implements TelegramAuthService {
 
     private static final long MAX_AUTH_AGE_SECONDS = 86_400;
 
     private final TelegramConfig telegramConfig;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public TelegramUserModel checkTelegramAuthorization(Map<String, String> authData) {
-        if (authData == null || authData.isEmpty()) {
+        if (authData.isEmpty()) {
             throw new IllegalArgumentException("Auth data is empty");
         }
 
@@ -78,9 +73,9 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
     }
 
     private String calculateTelegramHash(String dataCheckString) {
-        byte[] secretKey = sha256(telegramConfig.getToken().getBytes(StandardCharsets.UTF_8));
-        byte[] signature = hmacSha256(secretKey, dataCheckString.getBytes(StandardCharsets.UTF_8));
-        return bytesToHex(signature);
+        byte[] secretKey = CryptoUtils.sha256(telegramConfig.getToken().getBytes(StandardCharsets.UTF_8));
+        byte[] signature = CryptoUtils.hmacSha256(secretKey, dataCheckString.getBytes(StandardCharsets.UTF_8));
+        return CryptoUtils.bytesToHex(signature);
     }
 
     private TelegramUserModel createTelegramUser(Map<String, String> authData, String hash, long authDate) {
@@ -105,33 +100,5 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
                 .authDate(authDate)
                 .hash(hash)
                 .build();
-    }
-
-    private static byte[] sha256(byte[] data) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return digest.digest(data);
-        } catch (NoSuchAlgorithmException e) {
-            throw new SecurityException("Failed to calculate SHA-256", e);
-        }
-    }
-
-    private static byte[] hmacSha256(byte[] key, byte[] data) {
-        try {
-            Mac sha256Hmac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secretKey = new SecretKeySpec(key, "HmacSHA256");
-            sha256Hmac.init(secretKey);
-            return sha256Hmac.doFinal(data);
-        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new SecurityException("Failed to calculate HMAC-SHA256", e);
-        }
-    }
-
-    private static String bytesToHex(byte[] bytes) {
-        StringBuilder result = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            result.append(String.format("%02x", b));
-        }
-        return result.toString();
     }
 }

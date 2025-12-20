@@ -71,33 +71,21 @@ public class TelegramAuthApiDelegateImpl implements TelegramAuthApiDelegate {
     }
 
     private static Map<String, String> toAuthDataMap(TelegramAuthData data) {
-        if (data == null) {
-            throw new IllegalArgumentException("Auth data is empty");
-        }
-
         Map<String, String> map = new HashMap<>();
-        if (data.getId() != null) {
-            map.put("id", data.getId().toString());
-        }
-        if (data.getFirstName() != null) {
-            map.put("first_name", data.getFirstName());
-        }
-        if (data.getLastName() != null) {
-            map.put("last_name", data.getLastName());
-        }
-        if (data.getUsername() != null) {
-            map.put("username", data.getUsername());
-        }
-        if (data.getPhotoUrl() != null) {
-            map.put("photo_url", data.getPhotoUrl());
-        }
-        if (data.getAuthDate() != null) {
-            map.put("auth_date", data.getAuthDate().toString());
-        }
-        if (data.getHash() != null) {
-            map.put("hash", data.getHash());
-        }
+        putIfNotNull(map, "id", data.getId());
+        putIfNotNull(map, "first_name", data.getFirstName());
+        putIfNotNull(map, "last_name", data.getLastName());
+        putIfNotNull(map, "username", data.getUsername());
+        putIfNotNull(map, "photo_url", data.getPhotoUrl());
+        putIfNotNull(map, "auth_date", data.getAuthDate());
+        putIfNotNull(map, "hash", data.getHash());
         return map;
+    }
+
+    private static <T> void putIfNotNull(Map<String, String> map, String key, T value) {
+        if (value != null) {
+            map.put(key, value.toString());
+        }
     }
 
     private static TelegramUser toGeneratedUser(TelegramUserModel user) {

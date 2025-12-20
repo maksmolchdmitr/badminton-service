@@ -34,6 +34,9 @@ dependencies {
 	implementation("org.projectlombok:lombok:1.18.34")
 	annotationProcessor("org.projectlombok:lombok:1.18.34")
 
+	// JSR 305
+	implementation("com.google.code.findbugs:jsr305:3.0.2")
+
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
