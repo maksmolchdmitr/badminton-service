@@ -24,27 +24,22 @@ springBoot {
 }
 
 dependencies {
+    val mapstructVersion = "1.6.3"
+
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    // SpringDoc OpenAPI
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14")
     implementation("org.openapitools:jackson-databind-nullable:0.2.6")
-
-    // Lombok
     implementation("org.projectlombok:lombok:1.18.34")
-    annotationProcessor("org.projectlombok:lombok:1.18.34")
-
-    // JSR 305
     implementation("com.google.code.findbugs:jsr305:3.0.2")
-
-    // MapStruct Dependencies
-    val mapstructVersion = "1.6.3"
     implementation("org.mapstruct:mapstruct:$mapstructVersion")
+    implementation("org.postgresql:postgresql")
 
-    // Annotation Processor (Use kapt for Kotlin, annotationProcessor for Java)
+    annotationProcessor("org.projectlombok:lombok:1.18.34")
     annotationProcessor("org.mapstruct:mapstruct-processor:$mapstructVersion")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
