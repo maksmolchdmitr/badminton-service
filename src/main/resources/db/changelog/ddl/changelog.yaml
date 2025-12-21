@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: badminton/changelog.yaml
+      relativeToChangelogFile: true

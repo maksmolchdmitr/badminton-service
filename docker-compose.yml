@@ -1,0 +1,15 @@
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=badminton_pass
+      - POSTGRES_USER=badminton
+      - POSTGRES_DB=badminton_db
+    volumes:
+      - db_data:/var/lib/postgresql
+
+volumes:
+  db_data:

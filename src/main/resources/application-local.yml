@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/badminton_db
+    username: badminton
+    password: badminton_pass
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: badminton
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+  jooq:
+    sql-dialect: POSTGRES
+
+# Logging configuration
+logging:
+  level:
+    org:
+      springframework:
+        web: INFO
+      jooq: DEBUG
+      liquibase: INFO
+    com.zaxxer.hikari.HikariConfig: DEBUG
+    com.zaxxer.hikari: TRACE
