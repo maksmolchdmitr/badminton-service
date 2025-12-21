@@ -28,16 +28,16 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.postgresql:postgresql")
+    implementation("org.mapstruct:mapstruct:$mapstructVersion")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14")
     implementation("org.openapitools:jackson-databind-nullable:0.2.6")
     implementation("org.projectlombok:lombok:1.18.34")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("org.mapstruct:mapstruct:$mapstructVersion")
-    implementation("org.postgresql:postgresql")
     implementation("org.apache.commons:commons-lang3:3.19.0")
 
-    annotationProcessor("org.projectlombok:lombok:1.18.34")
     annotationProcessor("org.mapstruct:mapstruct-processor:$mapstructVersion")
+    annotationProcessor("org.projectlombok:lombok:1.18.34")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
