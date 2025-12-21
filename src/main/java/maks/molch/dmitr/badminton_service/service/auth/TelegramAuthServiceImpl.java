@@ -2,7 +2,7 @@ package maks.molch.dmitr.badminton_service.service.auth;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import maks.molch.dmitr.badminton_service.config.TelegramConfig;
+import maks.molch.dmitr.badminton_service.config.properties.TelegramProperties;
 import maks.molch.dmitr.badminton_service.model.TelegramUserModel;
 import maks.molch.dmitr.badminton_service.util.CryptoUtils;
 import org.springframework.stereotype.Service;
@@ -24,7 +24,7 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
 
     private static final long MAX_AUTH_AGE_SECONDS = 86_400;
 
-    private final TelegramConfig telegramConfig;
+    private final TelegramProperties telegramProperties;
 
     @Override
     public void checkTelegramUserData(TelegramUserModel telegramUserModel) {
@@ -68,7 +68,7 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
     }
 
     private String calculateTelegramHash(String dataCheckString) {
-        byte[] secretKey = CryptoUtils.sha256(telegramConfig.getToken().getBytes(StandardCharsets.UTF_8));
+        byte[] secretKey = CryptoUtils.sha256(telegramProperties.getToken().getBytes(StandardCharsets.UTF_8));
         byte[] signature = CryptoUtils.hmacSha256(secretKey, dataCheckString.getBytes(StandardCharsets.UTF_8));
         return CryptoUtils.bytesToHex(signature);
     }
