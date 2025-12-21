@@ -34,6 +34,7 @@ dependencies {
     implementation("com.google.code.findbugs:jsr305:3.0.2")
     implementation("org.mapstruct:mapstruct:$mapstructVersion")
     implementation("org.postgresql:postgresql")
+    implementation("org.apache.commons:commons-lang3:3.19.0")
 
     annotationProcessor("org.projectlombok:lombok:1.18.34")
     annotationProcessor("org.mapstruct:mapstruct-processor:$mapstructVersion")
