@@ -8,8 +8,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Data
 public class TokenProperties {
-    private String privateKey;
-    private String publicKey;
+    private String issuerUrl;
     private Long expireTimeInSeconds;
     private Integer refreshTokenExpireTimeInDays;
+    private String privateKey;
+    private String publicKey;
 }

@@ -3,8 +3,15 @@ package maks.molch.dmitr.badminton_service.util;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 
 /**
  * Утилитарный класс для криптографических операций.
@@ -61,5 +68,39 @@ public final class CryptoUtils {
             result.append(String.format("%02x", b));
         }
         return result.toString();
+    }
+
+    /**
+     * Loads a private key from a Base64-encoded string.
+     *
+     * @param base64 Base64-encoded private key (PKCS#8 format)
+     * @return the loaded PrivateKey
+     * @throws IllegalStateException if the key cannot be loaded
+     */
+    public static PrivateKey loadPrivateKey(String base64) {
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(base64.replaceAll("\\s+", ""));
+            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+            return KeyFactory.getInstance("RSA").generatePrivate(spec);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new IllegalStateException("Cannot load private key", e);
+        }
+    }
+
+    /**
+     * Loads a public key from a Base64-encoded string.
+     *
+     * @param base64 Base64-encoded public key (X.509 format)
+     * @return the loaded RSAPublicKey
+     * @throws IllegalStateException if the key cannot be loaded
+     */
+    public static RSAPublicKey loadPublicKey(String base64) {
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(base64.replaceAll("\\s+", ""));
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+            return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(spec);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new IllegalStateException("Cannot load public key", e);
+        }
     }
 }

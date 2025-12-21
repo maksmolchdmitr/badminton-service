@@ -22,6 +22,7 @@ repositories {
 
 val jooqVersion = "3.19.29"
 val postgresqlVersion = "42.7.3"
+val jwtVersion = "0.11.5"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -32,6 +33,7 @@ dependencies {
     implementation("org.jooq:jooq:$jooqVersion")
     implementation("org.jooq:jooq-kotlin:$jooqVersion")
     implementation("org.postgresql:postgresql:$postgresqlVersion")
+    implementation("io.jsonwebtoken:jjwt-api:$jwtVersion")
 
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14")
     implementation("org.openapitools:jackson-databind-nullable:0.2.6")
@@ -40,6 +42,8 @@ dependencies {
     implementation("org.apache.commons:commons-lang3:3.19.0")
     implementation("org.mapstruct:mapstruct:1.5.2.Final")
 
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:$jwtVersion")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jwtVersion")
 
     annotationProcessor("org.mapstruct:mapstruct-processor:1.5.2.Final")
     annotationProcessor("org.projectlombok:lombok:1.18.34")
@@ -117,13 +121,13 @@ jooq {
 
                 generator.apply {
                     name = "org.jooq.codegen.KotlinGenerator"
-                    
+
                     database.apply {
                         name = "org.jooq.meta.postgres.PostgresDatabase"
                         inputSchema = "public"
                         excludes = "databasechangelog|databasechangeloglock"
                     }
-                    
+
                     generate.apply {
                         isDeprecated = false
                         isRecords = true
