@@ -62,9 +62,9 @@ sourceSets.main {
     java.srcDir(layout.buildDirectory.dir("generated/jooq"))
 }
 
-tasks.named("compileJava") {
-    dependsOn("generateJooq")
-}
+//tasks.named("compileJava") {
+//    dependsOn("generateJooq")
+//}
 
 springBoot {
     mainClass.set("maks.molch.dmitr.badminton_service.BadmintonServiceApplication")
@@ -104,48 +104,48 @@ openApiGenerate {
     )
 }
 
-jooq {
-    version.set(jooqVersion)
-    edition.set(nu.studer.gradle.jooq.JooqEdition.OSS)
-
-    configurations {
-        create("main") {
-            generateSchemaSourceOnCompilation.set(false)
-
-            jooqConfiguration.apply {
-                jdbc.apply {
-                    driver = "org.postgresql.Driver"
-                    url = "jdbc:postgresql://localhost:5432/badminton_db"
-                    user = "badminton"
-                    password = "badminton_pass"
-                }
-
-                generator.apply {
-                    name = "org.jooq.codegen.KotlinGenerator"
-
-                    database.apply {
-                        name = "org.jooq.meta.postgres.PostgresDatabase"
-                        inputSchema = "public"
-                        excludes = "databasechangelog|databasechangeloglock"
-                    }
-
-                    generate.apply {
-                        isDeprecated = false
-                        isRecords = true
-                        isImmutablePojos = true
-                        isFluentSetters = true
-                        isPojosAsKotlinDataClasses = true
-                    }
-
-                    target.apply {
-                        packageName = "maks.molch.dmitr.badminton_service.generated.jooq"
-                        directory = layout.buildDirectory.dir("generated/jooq").get().asFile.path
-                    }
-                }
-            }
-        }
-    }
-}
+//jooq {
+//    version.set(jooqVersion)
+//    edition.set(nu.studer.gradle.jooq.JooqEdition.OSS)
+//
+//    configurations {
+//        create("main") {
+//            generateSchemaSourceOnCompilation.set(false)
+//
+//            jooqConfiguration.apply {
+//                jdbc.apply {
+//                    driver = "org.postgresql.Driver"
+//                    url = "jdbc:postgresql://localhost:5432/badminton_db"
+//                    user = "badminton"
+//                    password = "badminton_pass"
+//                }
+//
+//                generator.apply {
+//                    name = "org.jooq.codegen.KotlinGenerator"
+//
+//                    database.apply {
+//                        name = "org.jooq.meta.postgres.PostgresDatabase"
+//                        inputSchema = "public"
+//                        excludes = "databasechangelog|databasechangeloglock"
+//                    }
+//
+//                    generate.apply {
+//                        isDeprecated = false
+//                        isRecords = true
+//                        isImmutablePojos = true
+//                        isFluentSetters = true
+//                        isPojosAsKotlinDataClasses = true
+//                    }
+//
+//                    target.apply {
+//                        packageName = "maks.molch.dmitr.badminton_service.generated.jooq"
+//                        directory = layout.buildDirectory.dir("generated/jooq").get().asFile.path
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
 
 sourceSets {
     named("main") {
