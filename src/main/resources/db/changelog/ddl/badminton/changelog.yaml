@@ -3,5 +3,5 @@ databaseChangeLog:
       file: create_badminton_schema.sql
       relativeToChangelogFile: true
   - include:
-      file: user.sql
+      file: user_table.sql
       relativeToChangelogFile: true
