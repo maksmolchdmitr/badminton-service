@@ -4,12 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import maks.molch.dmitr.badminton_service.config.properties.TelegramProperties;
 import maks.molch.dmitr.badminton_service.model.TelegramUserModel;
+import maks.molch.dmitr.badminton_service.service.time.TimeService;
 import maks.molch.dmitr.badminton_service.util.CryptoUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -25,6 +25,7 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
     private static final long MAX_AUTH_AGE_SECONDS = 86_400;
 
     private final TelegramProperties telegramProperties;
+    private final TimeService timeService;
 
     @Override
     public void checkTelegramUserData(TelegramUserModel telegramUserModel) {
@@ -36,7 +37,7 @@ public class TelegramAuthServiceImpl implements TelegramAuthService {
             throw new IllegalArgumentException("Auth date is 0");
         }
 
-        long ageSeconds = Instant.now().getEpochSecond() - telegramUserModel.authDate();
+        long ageSeconds = timeService.now().getEpochSecond() - telegramUserModel.authDate();
         if (ageSeconds > MAX_AUTH_AGE_SECONDS) {
             throw new SecurityException("Data is outdated");
         }
