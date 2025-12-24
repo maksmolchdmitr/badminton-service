@@ -34,7 +34,7 @@ public class TelegramAuthApiDelegateImpl implements TelegramAuthApiDelegate {
         UserTableRecord userRecord = telegramUserMapper.toRecord(telegramUserModel);
         UUID userId = userTableDao.upsert(userRecord);
 
-        TokenModel tokenModel = tokenService.generate(telegramUserModel);
+        TokenModel tokenModel = tokenService.generate(telegramUserModel, userId);
 
         TokenResponse response = tokenMapper.toResponse(tokenModel);
         return ResponseEntity.ok(response);

@@ -20,7 +20,10 @@ public class UserTableDao {
                 .set(record)
                 .onConflict(USER_TABLE.TG_ID)
                 .doUpdate()
-                .set(record)
+                .set(USER_TABLE.FIRST_NAME, record.getFirstName())
+                .set(USER_TABLE.LAST_NAME, record.getLastName())
+                .set(USER_TABLE.PHOTO_URL, record.getPhotoUrl())
+                .set(USER_TABLE.USERNAME, record.getUsername())
                 .returning(USER_TABLE.ID)
                 .fetchOne(USER_TABLE.ID);
     }
