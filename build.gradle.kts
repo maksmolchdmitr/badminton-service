@@ -180,3 +180,8 @@ tasks.register("generateDb") {
 tasks.named("generateJooq") {
     dependsOn("liquibaseUpdate")
 }
+
+tasks.named<JavaCompile>("compileJava") {
+    dependsOn(tasks.named("generateDb"))
+}
+
