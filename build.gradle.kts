@@ -4,6 +4,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     id("org.openapi.generator") version "7.8.0"
     id("nu.studer.jooq") version "9.0"
+    id("org.liquibase.gradle") version "2.2.1"
 }
 
 group = "maks.molch.dmitr"
@@ -56,15 +57,15 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     jooqGenerator("org.postgresql:postgresql:42.7.3")
+
+    liquibaseRuntime("org.liquibase:liquibase-core")
+    liquibaseRuntime("org.postgresql:postgresql:$postgresqlVersion")
+    liquibaseRuntime("info.picocli:picocli:4.7.6")
 }
 
 sourceSets.main {
     java.srcDir(layout.buildDirectory.dir("generated/jooq"))
 }
-
-//tasks.named("compileJava") {
-//    dependsOn("generateJooq")
-//}
 
 springBoot {
     mainClass.set("maks.molch.dmitr.badminton_service.BadmintonServiceApplication")
@@ -125,7 +126,7 @@ jooq {
 
                     database.apply {
                         name = "org.jooq.meta.postgres.PostgresDatabase"
-                        inputSchema = "public"
+                        inputSchema = "badminton"
                         excludes = "databasechangelog|databasechangeloglock"
                     }
 
@@ -155,4 +156,27 @@ sourceSets {
 
 tasks.named("compileJava") {
     dependsOn(tasks.named("openApiGenerate"))
+}
+
+tasks.register<JavaExec>("liquibaseUpdate") {
+    group = "Liquibase"
+    description = "Run Liquibase update using JavaExec"
+
+    mainClass.set("liquibase.integration.commandline.Main")
+    classpath = configurations.liquibaseRuntime.get() // <- .get() превращает в FileCollection
+    args(
+        "--changeLogFile=src/main/resources/db/changelog/db.changelog-master.yaml",
+        "--url=jdbc:postgresql://localhost:5432/badminton_db",
+        "--username=badminton",
+        "--password=badminton_pass",
+        "update"
+    )
+}
+
+tasks.register("generateDb") {
+    dependsOn("generateJooq")
+}
+
+tasks.named("generateJooq") {
+    dependsOn("liquibaseUpdate")
 }
