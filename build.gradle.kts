@@ -122,7 +122,7 @@ jooq {
                 }
 
                 generator.apply {
-                    name = "org.jooq.codegen.KotlinGenerator"
+                    name = "org.jooq.codegen.JavaGenerator"
 
                     database.apply {
                         name = "org.jooq.meta.postgres.PostgresDatabase"
@@ -133,9 +133,9 @@ jooq {
                     generate.apply {
                         isDeprecated = false
                         isRecords = true
-                        isImmutablePojos = true
+                        isImmutablePojos = false
                         isFluentSetters = true
-                        isPojosAsKotlinDataClasses = true
+                        isPojosAsKotlinDataClasses = false
                     }
 
                     target.apply {
