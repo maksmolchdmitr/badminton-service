@@ -20,11 +20,6 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-home-cache-cleanup: true
-
       - name: Start PostgreSQL via Docker Compose
         run: docker compose up -d
 
@@ -34,6 +29,12 @@ jobs:
             docker exec postgres pg_isready -U badminton && break
             sleep 2
           done
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.2.1
+          gradle-home-cache-cleanup: true
 
       - name: Generate DB & Build
         run: ./gradlew generateDb build
