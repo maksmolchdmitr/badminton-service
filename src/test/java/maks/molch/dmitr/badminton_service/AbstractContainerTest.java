@@ -9,21 +9,36 @@ import org.dbunit.dataset.csv.CsvDataSet;
 import org.dbunit.operation.DatabaseOperation;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.json.JsonCompareMode;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.dbunit.Assertion.assertEquals;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SuppressWarnings("resource")
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
 public abstract class AbstractContainerTest {
+    @Autowired
+    private MockMvc mockMvc;
 
     private static final PostgreSQLContainer<?> DATABASE_CONTAINER;
 
@@ -53,6 +68,17 @@ public abstract class AbstractContainerTest {
         registry.add("spring.datasource.url", DATABASE_CONTAINER::getJdbcUrl);
         registry.add("spring.datasource.username", DATABASE_CONTAINER::getUsername);
         registry.add("spring.datasource.password", DATABASE_CONTAINER::getPassword);
+    }
+
+    protected void mockPostRequest(String path, String requestPath, String responsePath) throws Exception {
+        String requestJson = Files.readString(Paths.get("src/test/resources/" + requestPath));
+        String expectedResponseJson = Files.readString(Paths.get("src/test/resources/" + responsePath));
+
+        mockMvc.perform(MockMvcRequestBuilders.post(path)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isOk())
+                .andExpect(content().json(expectedResponseJson, JsonCompareMode.STRICT));
     }
 
     /**
