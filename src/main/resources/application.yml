@@ -20,6 +20,9 @@ spring:
   jooq:
     sql-dialect: POSTGRES
 
+server:
+  port: 8080
+
 token:
   issuerUrl: http://localhost:${server.port}
   expireTimeInSeconds: 3600
