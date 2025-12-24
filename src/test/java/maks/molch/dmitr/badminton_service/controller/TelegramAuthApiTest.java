@@ -5,7 +5,7 @@ import maks.molch.dmitr.badminton_service.service.time.TimeService;
 import maks.molch.dmitr.badminton_service.service.uuid.UuidGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -17,9 +17,9 @@ import static org.mockito.Mockito.when;
 
 @SpringBootTest
 class TelegramAuthApiTest extends AbstractContainerTest {
-    @MockitoSpyBean
+    @MockitoBean
     private TimeService timeService;
-    @MockitoSpyBean
+    @MockitoBean
     private UuidGenerator uuidGenerator;
 
     @Test
@@ -31,7 +31,7 @@ class TelegramAuthApiTest extends AbstractContainerTest {
 
         Instant mockedInstant = Instant.ofEpochSecond(1766345094);
         when(timeService.now()).thenReturn(mockedInstant);
-        when(timeService.now(any()))
+        when(timeService.now(any(ZoneId.class)))
                 .thenReturn(OffsetDateTime.ofInstant(mockedInstant, ZoneId.of("Europe/Moscow")));
         when(uuidGenerator.random())
                 .thenReturn(UUID.fromString("1bdc818f-7851-4aef-b31a-a6999a4cab52")) // for user id
