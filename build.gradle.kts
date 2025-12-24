@@ -181,3 +181,6 @@ tasks.named("generateJooq") {
     dependsOn("liquibaseUpdate")
 }
 
+tasks.named("compileJava") {
+    dependsOn("generateDb")
+}

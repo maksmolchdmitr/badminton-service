@@ -29,7 +29,7 @@ token:
 
 logging:
   level:
-    root: INFO
+    root: DEBUG
 
 telegram:
   bot:
