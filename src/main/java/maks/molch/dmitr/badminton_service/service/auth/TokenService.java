@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface TokenService {
     TokenModel generate(TelegramUserModel telegramUserModel, UUID userId);
+    TokenModel generate(UUID refreshToken);
 }

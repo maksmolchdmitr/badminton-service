@@ -3,7 +3,7 @@
 -- changeset maksmolch:create_user_table_table
 create table if not exists badminton.user_table (
     id uuid primary key,
-    tg_id int not null,
+    tg_id bigint not null,
     created_at timestamp not null,
     first_name varchar(255),
     last_name varchar(255),

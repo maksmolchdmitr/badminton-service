@@ -6,6 +6,7 @@ import maks.molch.dmitr.badminton_service.generated.jooq.tables.records.UserTabl
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static maks.molch.dmitr.badminton_service.generated.jooq.tables.UserTable.USER_TABLE;
@@ -26,5 +27,11 @@ public class UserTableDao {
                 .set(USER_TABLE.USERNAME, record.getUsername())
                 .returning(USER_TABLE.ID)
                 .fetchOne(USER_TABLE.ID);
+    }
+
+    public Optional<UserTableRecord> findById(UUID userId) {
+        return dsl.selectFrom(USER_TABLE)
+                .where(USER_TABLE.ID.eq(userId))
+                .fetchOptional();
     }
 }

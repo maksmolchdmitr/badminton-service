@@ -5,7 +5,9 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
 import maks.molch.dmitr.badminton_service.config.properties.TokenProperties;
 import maks.molch.dmitr.badminton_service.dao.RefreshTokenDao;
+import maks.molch.dmitr.badminton_service.dao.UserTableDao;
 import maks.molch.dmitr.badminton_service.generated.jooq.tables.records.RefreshTokenRecord;
+import maks.molch.dmitr.badminton_service.generated.jooq.tables.records.UserTableRecord;
 import maks.molch.dmitr.badminton_service.model.TelegramUserModel;
 import maks.molch.dmitr.badminton_service.model.TokenModel;
 import maks.molch.dmitr.badminton_service.service.time.TimeService;
@@ -26,21 +28,34 @@ public class TokenServiceImpl implements TokenService {
     private final TimeService timeService;
     private final UuidGenerator uuidGenerator;
     private final RefreshTokenDao refreshTokenDao;
+    private final UserTableDao userTableDao;
     private final TokenProperties tokenProperties;
 
     @Override
     public TokenModel generate(TelegramUserModel telegramUserModel, UUID userId) {
         OffsetDateTime now = timeService.now(ZoneId.systemDefault());
-        String accessToken = generateAccessToken(telegramUserModel, now);
+        String accessToken = generateAccessToken(telegramUserModel.id(), now);
         String refreshToken = generateRefreshToken(userId);
         return new TokenModel(accessToken, refreshToken);
     }
 
-    private String generateAccessToken(TelegramUserModel telegramUserModel, OffsetDateTime now) {
+    @Override
+    public TokenModel generate(UUID refreshToken) {
+        RefreshTokenRecord refreshTokenRecord = refreshTokenDao.findById(refreshToken)
+                .orElseThrow(() -> new SecurityException("Refresh token not found"));
+        refreshTokenDao.deleteById(refreshToken);
+        UserTableRecord userTableRecord = userTableDao.findById(refreshTokenRecord.getUserId())
+                .orElseThrow(IllegalStateException::new);
+        String accessToken = generateAccessToken(userTableRecord.getTgId(), timeService.now(ZoneId.systemDefault()));
+        String newRefreshToken = generateRefreshToken(refreshTokenRecord.getUserId());
+        return new TokenModel(accessToken, newRefreshToken);
+    }
+
+    private String generateAccessToken(Long telegramId, OffsetDateTime now) {
         return Jwts.builder()
                 .setHeaderParam("typ", "JWT")
                 .setIssuer(tokenProperties.getIssuerUrl())
-                .setSubject(telegramUserModel.id().toString())
+                .setSubject(telegramId.toString())
                 .setIssuedAt(TimeUtils.toDate(now))
                 .setExpiration(expirationDate())
                 .signWith(
@@ -51,15 +66,18 @@ public class TokenServiceImpl implements TokenService {
     }
 
     private String generateRefreshToken(UUID userId) {
-        RefreshTokenRecord refreshTokenRecord = refreshTokenDao.findBy(userId).orElseGet(() -> {
-            UUID token = uuidGenerator.random();
-            OffsetDateTime now = timeService.now(ZoneId.systemDefault());
-            LocalDateTime localDateTimeNow = TimeUtils.toLocalDateTime(now);
-            LocalDateTime expiresAt = localDateTimeNow.plusDays(tokenProperties.getRefreshTokenExpireTimeInDays());
-            RefreshTokenRecord record = new RefreshTokenRecord(token, userId, localDateTimeNow, expiresAt);
-            return refreshTokenDao.insert(record);
-        });
+        RefreshTokenRecord refreshTokenRecord = refreshTokenDao.findBy(userId)
+                .orElseGet(() -> generateNewRefreshToken(userId));
         return refreshTokenRecord.getToken().toString();
+    }
+
+    private RefreshTokenRecord generateNewRefreshToken(UUID userId) {
+        UUID token = uuidGenerator.random();
+        OffsetDateTime now = timeService.now(ZoneId.systemDefault());
+        LocalDateTime localDateTimeNow = TimeUtils.toLocalDateTime(now);
+        LocalDateTime expiresAt = localDateTimeNow.plusDays(tokenProperties.getRefreshTokenExpireTimeInDays());
+        RefreshTokenRecord record = new RefreshTokenRecord(token, userId, localDateTimeNow, expiresAt);
+        return refreshTokenDao.insert(record);
     }
 
     private Date expirationDate() {

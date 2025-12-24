@@ -1,17 +1,10 @@
 package maks.molch.dmitr.badminton_service.dao;
 
 import lombok.RequiredArgsConstructor;
-import maks.molch.dmitr.badminton_service.config.properties.TokenProperties;
 import maks.molch.dmitr.badminton_service.generated.jooq.tables.records.RefreshTokenRecord;
-import maks.molch.dmitr.badminton_service.service.time.TimeService;
-import maks.molch.dmitr.badminton_service.service.uuid.UuidGenerator;
-import maks.molch.dmitr.badminton_service.util.TimeUtils;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,5 +26,17 @@ public class RefreshTokenDao {
                 .set(record)
                 .returning()
                 .fetchOne();
+    }
+
+    public Optional<RefreshTokenRecord> findById(UUID refreshToken) {
+        return dsl.selectFrom(REFRESH_TOKEN)
+                .where(REFRESH_TOKEN.TOKEN.eq(refreshToken))
+                .fetchOptional();
+    }
+
+    public void deleteById(UUID refreshToken) {
+        dsl.deleteFrom(REFRESH_TOKEN)
+                .where(REFRESH_TOKEN.TOKEN.eq(refreshToken))
+                .execute();
     }
 }

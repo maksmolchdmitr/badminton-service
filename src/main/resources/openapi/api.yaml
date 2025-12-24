@@ -17,6 +17,14 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TelegramUser'
+            example:
+              id: 1319061322
+              auth_date: 1766345094
+              hash: b4af7f35972edeaced1348fd7a8c29bbf42e984f0b42eb5cc22155c6fb9c016e
+              first_name: Maks
+              last_name: Molch
+              username: maksmolch
+              photo_url: https://t.me/i/userpic/320/UEfLx103sdNTvYSrIxFEV8Ug_Z8nBWTrGu1eBRgmbmY.jpg
       responses:
         '200':
           description: Successfully authenticated
@@ -24,6 +32,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
+              example:
+                accessToken: eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OiR7c2VydmVyLnBvcnR9Iiwic3ViIjoiMTMxOTA2MTMyMiIsImlhdCI6MTc2NjM0NTA5NCwiZXhwIjoxNzY2MzQ4Njk0fQ.H3MEPxHKiNlLyybB1m_YHg13EAfD-VzgDR4Isw8tiSirsQ4Zzn4JgDDe0ulLws1qARV_oiiT0MR22f7wjghYsc0JkXPSE2amHQP6Jw-0bFy9myeLA_LPV7CBzk1RUoDqzrAudPiaeiT3rguI-GoRE0uXHMTWlmhXSHgVNiXQiQEYcxiUlqRG0xiQoJlma0L4cI2vYOnMiI0d03IGXu2Aod76GNiBRnOHzWowX658CvAlSGYaKf6sxfy1Zfclp_zgo65vC3f5e0GZDc4gqV9cia1hggyK6dQlxfVS3_TKKPKJ7rAH0c1e4d7ruMVNCz-CPC1XqejlssFH64ecTKjIkw
+                refreshToken: 1bdc818f-7851-4aef-b31a-a6999a4cab52
         '400':
           description: Bad request
           content:
@@ -36,6 +47,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/refresh:
+    post:
+      summary: Generate new access and refresh tokens using refresh token
+      operationId: refreshToken
+      tags:
+        - TelegramAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+            example:
+              refreshToken: 1bdc818f-7851-4aef-b31a-a6999a4cab52
+      responses:
+        '200':
+          description: Successfully refreshed tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              example:
+                accessToken: eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OiR7c2VydmVyLnBvcnR9Iiwic3ViIjoiMTMxOTA2MTMyMiIsImlhdCI6MTc2NjM0NTA5NCwiZXhwIjoxNzY2MzQ4Njk0fQ.H3MEPxHKiNlLyybB1m_YHg13EAfD-VzgDR4Isw8tiSirsQ4Zzn4JgDDe0ulLws1qARV_oiiT0MR22f7wjghYsc0JkXPSE2amHQP6Jw-0bFy9myeLA_LPV7CBzk1RUoDqzrAudPiaeiT3rguI-GoRE0uXHMTWlmhXSHgVNiXQiQEYcxiUlqRG0xiQoJlma0L4cI2vYOnMiI0d03IGXu2Aod76GNiBRnOHzWowX658CvAlSGYaKf6sxfy1Zfclp_zgo65vC3f5e0GZDc4gqV9cia1hggyK6dQlxfVS3_TKKPKJ7rAH0c1e4d7ruMVNCz-CPC1XqejlssFH64ecTKjIkw
+                refreshToken: 1bdc818f-7851-4aef-b31a-a6999a4cab52
+        '400':
+          description: Bad request (invalid refresh token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized (expired or invalid refresh token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     TelegramUser:
@@ -61,6 +110,7 @@ components:
           format: int64
         hash:
           type: string
+
     TokenResponse:
       type: object
       required:
@@ -71,6 +121,15 @@ components:
           type: string
         refreshToken:
           type: string
+
+    RefreshRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
     ErrorResponse:
       type: object
       required:

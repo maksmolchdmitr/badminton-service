@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import maks.molch.dmitr.badminton_service.dao.UserTableDao;
 import maks.molch.dmitr.badminton_service.generated.api.TelegramAuthApiDelegate;
 import maks.molch.dmitr.badminton_service.generated.jooq.tables.records.UserTableRecord;
+import maks.molch.dmitr.badminton_service.generated.model.RefreshRequest;
 import maks.molch.dmitr.badminton_service.generated.model.TelegramUser;
 import maks.molch.dmitr.badminton_service.generated.model.TokenResponse;
 import maks.molch.dmitr.badminton_service.mapper.TelegramUserMapper;
@@ -36,6 +37,14 @@ public class TelegramAuthApiDelegateImpl implements TelegramAuthApiDelegate {
 
         TokenModel tokenModel = tokenService.generate(telegramUserModel, userId);
 
+        TokenResponse response = tokenMapper.toResponse(tokenModel);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<TokenResponse> refreshToken(RefreshRequest refreshRequest) {
+        UUID refreshToken = UUID.fromString(refreshRequest.getRefreshToken());
+        TokenModel tokenModel = tokenService.generate(refreshToken);
         TokenResponse response = tokenMapper.toResponse(tokenModel);
         return ResponseEntity.ok(response);
     }
