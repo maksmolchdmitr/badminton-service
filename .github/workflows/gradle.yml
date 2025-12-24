@@ -36,8 +36,8 @@ jobs:
           gradle-version: 9.2.1
           gradle-home-cache-cleanup: true
 
-      - name: Generate DB & Build
-        run: ./gradlew build
+      - name: Build
+        run: ./gradlew build --rerun-tasks --info --stacktrace
 
       - name: Upload test results
         if: always()
