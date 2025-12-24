@@ -37,7 +37,9 @@ jobs:
           gradle-home-cache-cleanup: true
 
       - name: Generate DB & Build
-        run: ./gradlew generateDb build
+        run: |
+          ./gradlew generateDb
+          ./gradlew build
 
       - name: Upload test results
         if: always()
