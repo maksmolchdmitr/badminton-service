@@ -24,6 +24,9 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -101,6 +104,39 @@ public abstract class AbstractContainerTest {
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize database", e);
+        }
+    }
+
+    /**
+     * Очистка БД (удаление всех данных) без зависимости от конкретных таблиц
+     * Использует временное отключение foreign key constraints для безопасного удаления
+     *
+     * @param schema схема базы данных
+     */
+    @SuppressWarnings({"unused", "SqlDialectInspection", "SqlNoDataSourceInspection"})
+    protected void dbCleanup(String schema) {
+        try {
+            DatabaseConnection dbConnection = getConnection(schema);
+            Connection connection = dbConnection.getConnection();
+
+            connection.setAutoCommit(false);
+            try (Statement statement = connection.createStatement()) {
+                try (ResultSet tables = connection.getMetaData().getTables(null, schema, null, new String[]{"TABLE"})) {
+                    while (tables.next()) {
+                        String tableName = tables.getString("TABLE_NAME");
+                        String qualifiedTableName = schema + "." + tableName;
+                        statement.executeUpdate("DELETE FROM " + qualifiedTableName);
+                    }
+                }
+                connection.commit();
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to cleanup database", e);
         }
     }
 
