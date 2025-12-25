@@ -1,16 +1,38 @@
 openapi: 3.0.3
 info:
   title: Badminton Service API
-  version: 0.0.1
+  version: 0.1.0
+  description: |
+    Backend API for managing badminton groups, participants, matches and ratings (Elo).
+
+    Roles:
+    - **User**: registers via Telegram, views own stats/ratings, views own groups, creates new groups.
+    - **Group admin**: manages participants, links registered users to participants, manages match results.
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: http://localhost:8080
+    description: Local
 tags:
   - name: TelegramAuth
+  - name: Users
+  - name: Groups
+  - name: Participants
+  - name: Matches
+  - name: Stats
+  - name: Ratings
+security:
+  - bearerAuth: []
 paths:
   /api/auth/telegram/login:
     post:
+      tags: [TelegramAuth]
+      security: []
       summary: Login via Telegram authorization data
       operationId: telegramLogin
-      tags:
-        - TelegramAuth
+      description: |
+        Returns parameters for Telegram Login Widget and a nonce/state identifier.
+        Client then completes Telegram login and submits payload to `/auth/telegram/complete`.
       requestBody:
         required: true
         content:
@@ -50,10 +72,9 @@ paths:
 
   /api/auth/refresh:
     post:
+      tags: [TelegramAuth]
       summary: Generate new access and refresh tokens using refresh token
       operationId: refreshToken
-      tags:
-        - TelegramAuth
       requestBody:
         required: true
         content:
@@ -85,7 +106,559 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/auth/logout:
+    post:
+      tags: [TelegramAuth]
+      summary: Logout current session (token revocation if supported)
+      operationId: logout
+      responses:
+        "204":
+          description: Logged out
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/me:
+    get:
+      tags: [Users]
+      summary: Current user profile
+      operationId: getCurrentUser
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/groups:
+    get:
+      tags: [Groups]
+      summary: List groups where current user is a member (via linked participant)
+      operationId: listGroups
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        "200":
+          description: Groups page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Groups]
+      summary: Create new group
+      operationId: createGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupCreateRequest"
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/groups/{groupId}:
+    get:
+      tags: [Groups]
+      summary: Get group by id (member-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        "200":
+          description: Group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/groups/{groupId}/participants:
+    get:
+      tags: [Participants]
+      summary: List participants in group (member-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        "200":
+          description: Participants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Participant"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/groups/{groupId}/participants/search:
+    get:
+      tags: [Participants]
+      summary: Search participants in group with pagination (member-only)
+      description: |
+        Search participants by name with pagination. Results are sorted alphabetically.
+        Returns paginated list of participants matching the query.
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - in: query
+          name: query
+          description: Search query (filters by name, case-insensitive)
+          schema: { type: string, default: "" }
+        - in: query
+          name: page
+          description: Page number (0-based)
+          schema: { type: integer, minimum: 0, default: 0 }
+        - in: query
+          name: pageSize
+          description: Number of items per page
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+      responses:
+        "200":
+          description: Paginated participants
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParticipantSearchResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    post:
+      tags: [Participants]
+      summary: Create participant (admin-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantCreateRequest"
+      responses:
+        "201":
+          description: Participant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Participant"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Conflict (e.g. participant with such name already exists in group)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/groups/{groupId}/participants/{participantId}:
+    patch:
+      tags: [Participants]
+      summary: Update participant (admin-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/ParticipantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantUpdateRequest"
+      responses:
+        "200":
+          description: Updated participant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Participant"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Participants]
+      summary: Delete participant (admin-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/ParticipantId"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/groups/{groupId}/participants/{participantId}/link-user:
+    post:
+      tags: [Participants]
+      summary: Link registered user to participant (admin-only)
+      description: |
+        Binds a registered user (by id) to a participant entry in a group.
+        Useful when participant was created before user registration.
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/ParticipantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkUserRequest"
+      responses:
+        "200":
+          description: Linked participant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Participant"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Conflict (e.g. user already linked to another participant in the same group)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/groups/{groupId}/matches:
+    get:
+      tags: [Matches]
+      summary: List matches in group (member-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - in: query
+          name: from
+          description: Filter by start time (inclusive)
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          description: Filter by start time (exclusive)
+          schema: { type: string, format: date-time }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        "200":
+          description: Matches page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    post:
+      tags: [Matches]
+      summary: Create match result (admin-only)
+      description: Supports singles and doubles.
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchCreateRequest"
+      responses:
+        "201":
+          description: Match created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/groups/{groupId}/matches/{matchId}:
+    patch:
+      tags: [Matches]
+      summary: Update match result (admin-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/MatchId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchUpdateRequest"
+      responses:
+        "200":
+          description: Updated match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Matches]
+      summary: Delete match result (admin-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/MatchId"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/me/groups:
+    get:
+      tags: [Groups]
+      summary: Same as /groups (alias for convenience)
+      responses:
+        "200":
+          description: Groups page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/me/stats:
+    get:
+      tags: [Stats]
+      summary: Current user stats across all groups (or filter by group)
+      parameters:
+        - in: query
+          name: groupId
+          schema: { type: string }
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/me/games-stats:
+    get:
+      tags: [Stats]
+      summary: Current user game statistics with recent matches
+      description: Returns detailed stats including recent matches list
+      parameters:
+        - in: query
+          name: groupId
+          schema: { type: string }
+      responses:
+        "200":
+          description: Game stats with recent matches
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserGamesStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/me/ratings:
+    get:
+      tags: [Ratings]
+      summary: Current user ratings (singles + doubles)
+      parameters:
+        - in: query
+          name: groupId
+          schema: { type: string }
+      responses:
+        "200":
+          description: Ratings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserRatings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/groups/{groupId}/ratings/singles:
+    get:
+      tags: [Ratings]
+      summary: Singles Elo leaderboard in group (member-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        "200":
+          description: Leaderboard
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RatingRowSingles"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/groups/{groupId}/ratings/doubles:
+    get:
+      tags: [Ratings]
+      summary: Doubles Elo leaderboard in group (member-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        "200":
+          description: Leaderboard
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RatingRowDoubles"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/groups/{groupId}/stats:
+    get:
+      tags: [Stats]
+      summary: Group stats (member-only)
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        "200":
+          description: Group stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    GroupId:
+      in: path
+      name: groupId
+      required: true
+      schema: { type: string }
+    ParticipantId:
+      in: path
+      name: participantId
+      required: true
+      schema: { type: string }
+    MatchId:
+      in: path
+      name: matchId
+      required: true
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
   schemas:
     TelegramUser:
       type: object
@@ -144,3 +717,321 @@ components:
           type: string
         path:
           type: string
+
+    User:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        telegramId: { type: integer, format: int64 }
+        username: { type: string }
+        displayName: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, telegramId, createdAt]
+
+    Group:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string, example: Friday Badminton }
+        createdAt: { type: string, format: date-time }
+        createdByUserId: { type: string }
+        myRole:
+          type: string
+          description: Role of current user in this group
+          enum: [member, admin]
+      required: [id, name, createdAt]
+
+    GroupCreateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+      required: [name]
+
+    GroupPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Group"
+        nextCursor:
+          type: string
+          nullable: true
+      required: [items]
+
+    Participant:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        groupId: { type: string }
+        name: { type: string, example: Maks }
+        userId:
+          type: string
+          nullable: true
+          description: Linked registered user id (if any)
+        createdAt: { type: string, format: date-time }
+      required: [id, groupId, name, createdAt]
+
+    ParticipantCreateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+      required: [name]
+
+    ParticipantUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+
+    ParticipantSearchResult:
+      type: object
+      additionalProperties: false
+      description: Paginated search result for participants
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Participant"
+        page:
+          type: integer
+          description: Current page number (0-based)
+        pageSize:
+          type: integer
+          description: Number of items per page
+        total:
+          type: integer
+          description: Total number of matching participants
+        hasMore:
+          type: boolean
+          description: Whether there are more pages available
+      required: [items, page, pageSize, total, hasMore]
+
+    LinkUserRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        userId: { type: string }
+      required: [userId]
+
+    MatchKind:
+      type: string
+      enum: [singles, doubles]
+
+    Match:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        groupId: { type: string }
+        kind: { $ref: "#/components/schemas/MatchKind" }
+        startedAt: { type: string, format: date-time }
+        notes: { type: string }
+        # Singles: teamA = [p1], teamB = [p2]
+        # Doubles: teamA = [p1,p2], teamB = [p3,p4]
+        teamA:
+          type: array
+          items: { type: string, description: Participant id }
+          minItems: 1
+          maxItems: 2
+        teamB:
+          type: array
+          items: { type: string, description: Participant id }
+          minItems: 1
+          maxItems: 2
+        score:
+          $ref: "#/components/schemas/MatchScore"
+        createdAt: { type: string, format: date-time }
+        createdByUserId: { type: string }
+      required: [id, groupId, kind, startedAt, teamA, teamB, score, createdAt]
+
+    MatchScore:
+      type: object
+      additionalProperties: false
+      description: |
+        Match score as list of games. Each game has pointsA and pointsB.
+      properties:
+        games:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/GameScore"
+      required: [games]
+
+    GameScore:
+      type: object
+      additionalProperties: false
+      properties:
+        pointsA: { type: integer, minimum: 0 }
+        pointsB: { type: integer, minimum: 0 }
+      required: [pointsA, pointsB]
+
+    MatchCreateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        kind: { $ref: "#/components/schemas/MatchKind" }
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Match start time. If not provided, backend sets current time.
+        notes: { type: string }
+        teamA:
+          type: array
+          items: { type: string }
+          minItems: 1
+          maxItems: 2
+        teamB:
+          type: array
+          items: { type: string }
+          minItems: 1
+          maxItems: 2
+        score:
+          $ref: "#/components/schemas/MatchScore"
+      required: [kind, teamA, teamB, score]
+
+    MatchUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        startedAt: { type: string, format: date-time }
+        notes: { type: string }
+        teamA:
+          type: array
+          items: { type: string }
+          minItems: 1
+          maxItems: 2
+        teamB:
+          type: array
+          items: { type: string }
+          minItems: 1
+          maxItems: 2
+        score:
+          $ref: "#/components/schemas/MatchScore"
+
+    MatchPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Match" }
+        nextCursor:
+          type: string
+          nullable: true
+      required: [items]
+
+    UserStats:
+      type: object
+      additionalProperties: false
+      properties:
+        userId: { type: string }
+        singles:
+          $ref: "#/components/schemas/StatsBlock"
+        doubles:
+          $ref: "#/components/schemas/StatsBlock"
+      required: [userId, singles, doubles]
+
+    UserGamesStats:
+      type: object
+      additionalProperties: false
+      description: Extended user stats with recent matches
+      properties:
+        userId: { type: string }
+        singles:
+          $ref: "#/components/schemas/StatsBlock"
+        doubles:
+          $ref: "#/components/schemas/StatsBlock"
+        recentMatches:
+          type: array
+          description: Recent matches involving the user
+          items:
+            $ref: "#/components/schemas/Match"
+      required: [userId, singles, doubles, recentMatches]
+
+    GroupStats:
+      type: object
+      additionalProperties: false
+      properties:
+        groupId: { type: string }
+        totalMatches: { type: integer, minimum: 0 }
+        lastMatchAt: { type: string, format: date-time, nullable: true }
+      required: [groupId, totalMatches]
+
+    StatsBlock:
+      type: object
+      additionalProperties: false
+      properties:
+        matchesPlayed: { type: integer, minimum: 0 }
+        matchesWon: { type: integer, minimum: 0 }
+        matchesLost: { type: integer, minimum: 0 }
+        winRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+      required: [matchesPlayed, matchesWon, matchesLost, winRate]
+
+    UserRatings:
+      type: object
+      additionalProperties: false
+      properties:
+        userId: { type: string }
+        singlesElo:
+          type: number
+          format: double
+          description: Current singles Elo (in selected group or global aggregation)
+        doublesByPartner:
+          type: array
+          description: Doubles Elo ratings grouped by partner
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              partnerUserId: { type: string }
+              partnerName: { type: string }
+              games: { type: integer, minimum: 0 }
+              wins: { type: integer, minimum: 0 }
+              losses: { type: integer, minimum: 0 }
+              elo: { type: number, format: double }
+            required: [partnerUserId, partnerName, games, wins, losses, elo]
+      required: [userId, singlesElo, doublesByPartner]
+
+    RatingRowSingles:
+      type: object
+      additionalProperties: false
+      properties:
+        participantId: { type: string }
+        participantName: { type: string }
+        elo: { type: number, format: double }
+        games: { type: integer, minimum: 0 }
+      required: [participantId, participantName, elo, games]
+
+    RatingRowDoubles:
+      type: object
+      additionalProperties: false
+      description: |
+        Elo for a pair. pairKey can be stable concatenation of sorted participant ids.
+      properties:
+        pairKey: { type: string, example: "p1:p2" }
+        participantIds:
+          type: array
+          items: { type: string }
+          minItems: 2
+          maxItems: 2
+        participantNames:
+          type: array
+          items: { type: string }
+          minItems: 2
+          maxItems: 2
+        elo: { type: number, format: double }
+        games: { type: integer, minimum: 0 }
+      required: [pairKey, participantIds, participantNames, elo, games]
