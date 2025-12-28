@@ -105,12 +105,12 @@ openApiGenerate {
     )
 }
 
-fun getEnv(name: String): String =
-    System.getenv(name)
-        ?: throw GradleException("Environment variable $name is not set")
-val dbUrl = getEnv("SPRING_DATASOURCE_URL")
-val dbUser = getEnv("SPRING_DATASOURCE_USERNAME")
-val dbPassword = getEnv("SPRING_DATASOURCE_PASSWORD")
+fun getEnv(name: String, defaultValue: String): String =
+    System.getenv(name) ?: defaultValue
+
+val dbUrl = getEnv("SPRING_DATASOURCE_URL", "jdbc:postgresql://localhost:5432/badminton_db")
+val dbUser = getEnv("SPRING_DATASOURCE_USERNAME", "badminton")
+val dbPassword = getEnv("SPRING_DATASOURCE_PASSWORD", "badminton_pass")
 
 jooq {
     version.set(jooqVersion)
