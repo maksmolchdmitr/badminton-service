@@ -105,6 +105,13 @@ openApiGenerate {
     )
 }
 
+fun getEnv(name: String): String =
+    System.getenv(name)
+        ?: throw GradleException("Environment variable $name is not set")
+val dbUrl = getEnv("SPRING_DATASOURCE_URL")
+val dbUser = getEnv("SPRING_DATASOURCE_USERNAME")
+val dbPassword = getEnv("SPRING_DATASOURCE_PASSWORD")
+
 jooq {
     version.set(jooqVersion)
     edition.set(nu.studer.gradle.jooq.JooqEdition.OSS)
@@ -116,9 +123,9 @@ jooq {
             jooqConfiguration.apply {
                 jdbc.apply {
                     driver = "org.postgresql.Driver"
-                    url = "jdbc:postgresql://localhost:5432/badminton_db"
-                    user = "badminton"
-                    password = "badminton_pass"
+                    url = dbUrl
+                    user = dbUser
+                    password = dbPassword
                 }
 
                 generator.apply {
@@ -163,12 +170,13 @@ tasks.register<JavaExec>("liquibaseUpdate") {
     description = "Run Liquibase update using JavaExec"
 
     mainClass.set("liquibase.integration.commandline.Main")
-    classpath = configurations.liquibaseRuntime.get() // <- .get() превращает в FileCollection
+    classpath = configurations.liquibaseRuntime.get()
+
     args(
         "--changeLogFile=src/main/resources/db/changelog/db.changelog-master.yaml",
-        "--url=jdbc:postgresql://localhost:5432/badminton_db",
-        "--username=badminton",
-        "--password=badminton_pass",
+        "--url=$dbUrl",
+        "--username=$dbUser",
+        "--password=$dbPassword",
         "update"
     )
 }
