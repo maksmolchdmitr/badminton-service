@@ -2,7 +2,7 @@
 
 ```bash
 ./gradlew clean
-docker compose up -d
+docker-compose up -d
 ./gradlew build
 ```
 
