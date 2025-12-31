@@ -132,9 +132,10 @@ jobs:
       # ---------- Docker login ----------
       - name: Login to Yandex Container Registry
         run: |
-          docker login ${REGISTRY} \
-            -u oauth \
-            -p "${{ secrets.YC_REGISTRY_PASSWORD }}"
+          echo "${{ secrets.YC_REGISTRY_PASSWORD }}" | docker login \
+            --username oauth \
+            --password-stdin \
+            cr.yandex
 
       # ---------- Build & Push image ----------
       - name: Build & Push Docker image
