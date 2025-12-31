@@ -62,7 +62,7 @@ jobs:
 
     env:
       # === DB через SSH-туннель ===
-      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:6432/badminton
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:6432/badminton-service
       SPRING_DATASOURCE_USERNAME: ${{ secrets.PROD_DB_USER }}
       SPRING_DATASOURCE_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
 
