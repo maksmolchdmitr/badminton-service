@@ -67,8 +67,10 @@ jobs:
       SPRING_DATASOURCE_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
 
       # === Image ===
+      REGISTRY: cr.yandex
+      REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
       IMAGE_NAME: badminton-service
-      IMAGE_TAG: local
+      IMAGE_TAG: ${{ github.sha }}
 
       # === SSH ===
       BASTION_HOST: 89.169.146.152
@@ -119,8 +121,7 @@ jobs:
 
       # ---------- Liquibase ----------
       - name: Build & run Liquibase migrations (PROD)
-        run: |
-          ./gradlew build
+        run: ./gradlew build
 
       # ---------- Close SSH tunnel ----------
       - name: Close SSH tunnel
@@ -128,12 +129,20 @@ jobs:
         run: |
           lsof -t -i :6432 | xargs -r kill
 
-      # ---------- Build image (NO PUSH) ----------
-      - name: Build Docker image locally
+      # ---------- Docker login ----------
+      - name: Login to Yandex Container Registry
         run: |
-          docker build \
-            -t ${IMAGE_NAME}:${IMAGE_TAG} \
-            .
+          docker login ${REGISTRY} \
+            -u oauth \
+            -p "${{ secrets.YC_REGISTRY_PASSWORD }}"
+
+      # ---------- Build & Push image ----------
+      - name: Build & Push Docker image
+        run: |
+          IMAGE_FULL_NAME=${REGISTRY}/${REGISTRY_ID}/${IMAGE_NAME}:${IMAGE_TAG}
+
+          docker build -t ${IMAGE_FULL_NAME} .
+          docker push ${IMAGE_FULL_NAME}
 
       # ---------- kubectl ----------
       - name: Set up kubectl
@@ -151,7 +160,7 @@ jobs:
         run: |
           helm upgrade --install badminton-service helm/badminton-service \
             --namespace default \
-            --set image.repository=${IMAGE_NAME} \
+            --set image.repository=${REGISTRY}/${REGISTRY_ID}/${IMAGE_NAME} \
             --set image.tag=${IMAGE_TAG} \
             --wait \
             --timeout 3m
