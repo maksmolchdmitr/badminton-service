@@ -54,3 +54,104 @@ jobs:
           name: build-reports
           path: build/reports/
           retention-days: 7
+  deploy:
+    name: Deploy to Production
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+
+    env:
+      # === DB через SSH-туннель ===
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:6432/badminton
+      SPRING_DATASOURCE_USERNAME: ${{ secrets.PROD_DB_USER }}
+      SPRING_DATASOURCE_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+
+      # === Image ===
+      IMAGE_NAME: badminton-service
+      IMAGE_TAG: local
+
+      # === SSH ===
+      BASTION_HOST: 89.169.146.152
+      BASTION_USER: aksolchmitr
+      DB_HOST: rc1a-68rd8p4iciipve2l.mdb.yandexcloud.net
+      DB_PORT: 6432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---------- SSH key ----------
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.YC_SSH_PRIVATE_KEY }}" > ~/.ssh/yandex_cloud_vm
+          chmod 600 ~/.ssh/yandex_cloud_vm
+
+      # ---------- Open SSH tunnel ----------
+      - name: Open SSH tunnel to PROD DB
+        run: |
+          ssh -i ~/.ssh/yandex_cloud_vm \
+            -o UserKnownHostsFile=/dev/null \
+            -o StrictHostKeyChecking=no \
+            -L 6432:${DB_HOST}:${DB_PORT} \
+            ${BASTION_USER}@${BASTION_HOST} \
+            -N -f
+
+      - name: Wait for DB tunnel
+        run: |
+          for i in {1..20}; do
+            nc -z localhost 6432 && echo "DB tunnel ready" && exit 0
+            sleep 2
+          done
+          echo "DB tunnel not ready" && exit 1
+
+      # ---------- JDK & Gradle ----------
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.2.1
+
+      # ---------- Liquibase ----------
+      - name: Build & run Liquibase migrations (PROD)
+        run: |
+          ./gradlew build
+
+      # ---------- Close SSH tunnel ----------
+      - name: Close SSH tunnel
+        if: always()
+        run: |
+          lsof -t -i :6432 | xargs -r kill
+
+      # ---------- Build image (NO PUSH) ----------
+      - name: Build Docker image locally
+        run: |
+          docker build \
+            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+            .
+
+      # ---------- kubectl ----------
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.0
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+
+      # ---------- Helm ----------
+      - name: Deploy via Helm
+        run: |
+          helm upgrade --install badminton-service helm/badminton-service \
+            --namespace default \
+            --set image.repository=${IMAGE_NAME} \
+            --set image.tag=${IMAGE_TAG} \
+            --wait \
+            --timeout 3m
