@@ -109,7 +109,7 @@ httpRoute:
   #       value: v2
 
 env:
-  SPRING_PROFILES_ACTIVE: local
+  SPRING_PROFILES_ACTIVE: prod
   SERVER_PORT: "8080"
 
 resources:
