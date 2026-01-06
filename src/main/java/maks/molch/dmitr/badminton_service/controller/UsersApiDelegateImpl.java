@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import maks.molch.dmitr.badminton_service.generated.api.UsersApiDelegate;
 import maks.molch.dmitr.badminton_service.generated.model.User;
 import maks.molch.dmitr.badminton_service.service.time.TimeService;
-import maks.molch.dmitr.badminton_service.util.TimeUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
